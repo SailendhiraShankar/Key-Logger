@@ -1,0 +1,19 @@
+To use this code:
+
+Install the required package:
+pip install keyboard
+
+Run the script (requires administrator/root privileges since it monitors keyboard input):
+python keylogger.py
+
+The program will:
+
+Create a "logs" directory
+Save keystroke logs every 60 seconds (customizable)
+Format the logged keys in a readable way
+Use timestamped filenames for easy tracking
+
+
+
+To stop the keylogger, press Ctrl+C in the terminal window.
+Important note: This code is provided strictly for educational purposes. Using keyloggers without proper authorization on devices you don't own is illegal and unethical. Always ensure you have appropriate permissions before running monitoring software.
